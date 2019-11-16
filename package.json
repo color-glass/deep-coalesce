@@ -1,0 +1,40 @@
+{
+  "name": "deep-coalesce",
+  "version": "1.0.0",
+  "description": "Provides a type-safe way to read deeply-nested JavaScript objects without null pointer exceptions.",
+  "author": "John Stewart",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/color-glass/deep-coalesce",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/color-glass/deep-coalesce.git"
+  },
+  "bugs": {
+    "url": "https://github.com/color-glass/deep-coalesce/issues"
+  },
+  "keywords": [
+    "typescript",
+    "typesafe",
+    "types",
+    "typed",
+    "nested",
+    "coalesce",
+    "coalescing"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/assert": "^1.4.3",
+    "@types/jest": "^24.0.22",
+    "@types/node": "^12.12.7",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.1.0",
+    "typescript": "^3.7.2",
+    "utility-types": "^3.10.0"
+  },
+  "dependencies": {
+  }
+}

@@ -1,0 +1,246 @@
+/*
+ * Copyright 2019 Color-Glass Studios, LLC.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import assert = require('assert');
+import {Write, write} from './write';
+import {DeepNonNullable} from "utility-types";
+
+interface TestNestedInterface<T> {
+    primitive: T
+    optionalPrimitive?: T
+    primitiveArray: T[]
+    optionalPrimitiveArray?: (T | undefined)[]
+}
+
+interface TestInterface<T> extends TestNestedInterface<T> {
+    object: TestNestedInterface<T>
+    optionalObject?: TestNestedInterface<T>
+    objectArray: TestNestedInterface<T | undefined>[]
+    optionalObjectArray?: TestNestedInterface<T | undefined>[]
+}
+
+function getMinFixture(): TestInterface<string> {
+    return {
+        primitive: 'test1',
+        optionalPrimitive: 'test2',
+        primitiveArray: ['array1', 'array2'],
+        object: {
+            primitive: 'test4',
+            primitiveArray: ['array3', 'array4']
+        },
+        objectArray: [{
+            primitive: 'test5',
+            primitiveArray: ['array5', 'array6']
+        }]
+    };
+}
+
+test('implicit write nested with optional path', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    assert.equal(value.optionalObject, undefined);
+    const result = wrapped.optionalObject.optionalPrimitive('test')();
+    assert.equal(value.optionalObject && value.optionalObject.optionalPrimitive, 'test');
+    assert.equal(result, 'test');
+});
+
+test('implicit write in an array', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObjectArray[0].optionalPrimitiveArray[1]('test');
+    assert.equal((value as DeepNonNullable<TestInterface<string>>).optionalObjectArray[0].optionalPrimitiveArray[1],
+        'test');
+});
+
+test('intermediate value set when undefined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Set).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value set when defined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    value.optionalObject = {
+        primitive: 'foo',
+        primitiveArray: ['bar']
+    };
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Set).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value default set behavior when undefined and no write method set', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value fallback when undefined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Fallback).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value fallback when defined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    value.optionalObject = {
+        primitive: 'foo',
+        primitiveArray: ['bar']
+    };
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Fallback).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'foo',
+        primitiveArray: ['bar'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value merge when undefined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Merge).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value merge when defined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    value.optionalObject = {
+        primitive: 'foo',
+        primitiveArray: ['bar']
+    };
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitiveArray: ['other array']
+    }, Write.Merge).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'foo',
+        primitiveArray: ['bar'],
+        optionalPrimitiveArray: ['other array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value assign when undefined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Assign).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('intermediate value assign when defined', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    value.optionalObject = {
+        primitive: 'foo',
+        primitiveArray: ['bar'],
+        optionalPrimitiveArray: ['other array']
+    };
+
+    wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Assign).optionalPrimitive('optional');
+    assert.deepEqual(value.optionalObject, {
+        primitive: 'required',
+        primitiveArray: ['array'],
+        optionalPrimitiveArray: ['other array'],
+        optionalPrimitive: 'optional'
+    });
+});
+
+test('return current value', () => {
+    const value = getMinFixture();
+    const wrapped = write(value);
+
+    value.optionalObject = {
+        primitive: 'foo',
+        primitiveArray: ['bar'],
+        optionalPrimitiveArray: ['other array']
+    };
+
+    const result = wrapped.optionalObject({
+        primitive: 'required',
+        primitiveArray: ['array']
+    }, Write.Assign).optionalPrimitive('optional')();
+    assert.equal(result, 'optional');
+
+    assert.equal(wrapped.optionalObject.primitive(), 'required');
+});
